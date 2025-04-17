@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Price Comparison Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .product-img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-right: 10px;
+        }
+        .results-table th, .results-table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .no-results {
+            text-align: center;
+            color: #6c757d;
+            margin-top: 20px;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Price Comparator</a>
+    <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <span class="nav-link" th:text="${#authentication.name}">User</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/logout">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Main Container -->
+<div class="container">
+
+    <!-- Search Products Section -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Search Products</h3>
+        </div>
+        <div class="card-body">
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="query">Enter product name:</label>
+                    <input type="text" id="query" name="query" class="form-control" placeholder="e.g., iPhone 15" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="sortOption">Sort by:</label>
+                        <select id="sortOption" name="sortOption" class="form-control">
+                            <option value="">-- Select --</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="name_asc">Name: A to Z</option>
+                            <option value="name_desc">Name: Z to A</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="platform">Platform:</label>
+                        <select id="platform" name="platform" class="form-control">
+                            <option value="">-- All Platforms --</option>
+                            <option value="Amazon">Amazon</option>
+                            <option value="Flipkart">Flipkart</option>
+                            <option value="ShopClues">ShopClues</option>
+                            <!-- Add more platforms if needed -->
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="loading" style="display:none;">Loading...</div>
+
+            <!-- No Results -->
+            <div id="noResults" class="no-results" style="display:none;">No products found.</div>
+
+            <!-- Results Table -->
+            <div class="table-responsive">
+                <table id="resultsTable" class="table table-bordered table-striped results-table" style="display:none;">
+                    <thead class="thead-dark">
+                    <tr>
+                        <th>Image</th>
+                        <th>Product Name</th>
+                        <th>Price</th>
+                        <th>Platform</th>
+                        <th>Link</th>
+                    </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    <!-- Dynamic rows will be appended here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- JS Scripts -->
+<script>
+    document.getElementById('searchForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('noResults').style.display = 'none';
+        document.getElementById('resultsTable').style.display = 'none';
+
+        const query = document.getElementById('query').value;
+        const sortOption = document.getElementById('sortOption').value;
+        const platform = document.getElementById('platform').value;
+
+        try {
+            const params = new URLSearchParams({ query });
+            if (sortOption) params.append('sortOption', sortOption);
+            if (platform) params.append('platform', platform);
+
+            const response = await fetch('/search?' + params.toString());
+            const data = await response.json();
+
+            document.getElementById('loading').style.display = 'none';
+
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+
+            if (data.length === 0) {
+                document.getElementById('noResults').style.display = 'block';
+                return;
+            }
+
+            data.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><img src="${product.imageUrl}" alt="Product Image" class="product-img"></td>
+                    <td>${product.name}</td>
+                    <td>₹${product.price}</td>
+                    <td>${product.platform}</td>
+                    <td><a href="${product.productUrl}" target="_blank" class="btn btn-sm btn-success">View</a></td>
+                `;
+                resultsBody.appendChild(row);
+            });
+
+            document.getElementById('resultsTable').style.display = 'table';
+        } catch (error) {
+            console.error('Search failed:', error);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
+        }
+    });
+</script>
+
+</body>
+</html>
