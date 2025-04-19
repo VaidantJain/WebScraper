@@ -39,41 +39,45 @@ public class FlipkartHelper {
                     Product product = new Product();
 
                     // Set product name
-                    String name = productLinkElement.text();
-                    product.setName(name);
+                    String productName = productLinkElement.text();
+                    if (productName.contains(keyword.toLowerCase())
+                            && !(productName.contains("cover")|| productName.contains("edge to edge") || productName.contains("temp") || productName.contains("cov")   || productName.contains("case") || productName.contains("protector") || productName.contains("skin"))) {
 
-                    // Set product URL
-                    Element urlElement = container.selectFirst("a.CGtC98");
-                    if (urlElement != null) {
-                        String productUrl = urlElement.attr("href");
-                        if (!productUrl.startsWith("http")) {
-                            productUrl = "https://www.flipkart.com" + productUrl;
-                        }
-                        product.setProductUrl(productUrl);
-                    }
+                        product.setName(productName);
 
-                    // Set price
-                    Element priceElement = container.selectFirst("div.Nx9bqj._4b5DiR");
-                    if (priceElement != null) {
-                        String priceText = priceElement.text().replaceAll("[^0-9]", ""); // Remove ₹ , commas, etc.
-                        if (!priceText.isEmpty()) {
-                            Double price = Double.valueOf(priceText);
-                            product.setPrice(price);
+                        // Set product URL
+                        Element urlElement = container.selectFirst("a.CGtC98");
+                        if (urlElement != null) {
+                            String productUrl = urlElement.attr("href");
+                            if (!productUrl.startsWith("http")) {
+                                productUrl = "https://www.flipkart.com" + productUrl;
+                            }
+                            product.setProductUrl(productUrl);
                         }
-                    }
 
-                    // Set product image
-                    Element imgElement = container.selectFirst("img");
-                    if (imgElement != null) {
-                        String imgUrl = imgElement.attr("src");
-                        if (imgUrl != null && !imgUrl.isEmpty()) {
-                            product.setImageUrl(imgUrl);
+                        // Set price
+                        Element priceElement = container.selectFirst("div.Nx9bqj._4b5DiR");
+                        if (priceElement != null) {
+                            String priceText = priceElement.text().replaceAll("[^0-9]", ""); // Remove ₹ , commas, etc.
+                            if (!priceText.isEmpty()) {
+                                Double price = Double.valueOf(priceText);
+                                product.setPrice(price);
+                            }
                         }
+
+                        // Set product image
+                        Element imgElement = container.selectFirst("img");
+                        if (imgElement != null) {
+                            String imgUrl = imgElement.attr("src");
+                            if (imgUrl != null && !imgUrl.isEmpty()) {
+                                product.setImageUrl(imgUrl);
+                            }
+                        }
+                        product.setPlatform("Flipkart");
+                        product.setCurrency("INR");
+                        // Finally, add the product
+                        products.add(product);
                     }
-                    product.setPlatform("Flipkart");
-                    product.setCurrency("INR");
-                    // Finally, add the product
-                    products.add(product);
 
                 } catch (Exception e) {
                     log.error("Error parsing a product", e);

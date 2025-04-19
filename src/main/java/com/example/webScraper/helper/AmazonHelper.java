@@ -31,31 +31,35 @@ public class AmazonHelper {
                     String relativeUrl = productElement.select("a.a-link-normal").attr("href");
                     String fullUrl = "https://www.amazon.in" + relativeUrl;
 
+                    String productName = productElement.select("h2 span").text().toLowerCase();
+                    if (productName.contains(keyword.toLowerCase())
+                            && !(productName.contains("cover")|| productName.contains("edge to edge") || productName.contains("temp") || productName.contains("cov")   || productName.contains("case") || productName.contains("protector") || productName.contains("skin"))) {
 
-                    // Set Name
-                    product.setName(productElement.select("h2 span").text());
+                        // Set Name
+                        product.setName(productElement.select("h2 span").text());
 
-                    // Set Product URL
-                    product.setProductUrl(fullUrl);
+                        // Set Product URL
+                        product.setProductUrl(fullUrl);
 
-                    // Scrape and set Price
-                    String wholePart = productElement.select("span.a-price-whole").text().replace(",", "").trim();
-                    String fractionPart = productElement.select("span.a-price-fraction").text().trim();
-                    if (!wholePart.isEmpty()) {
-                        String fullPrice = wholePart + "." + (fractionPart.isEmpty() ? "00" : fractionPart);
-                        product.setPrice(Double.parseDouble(fullPrice));
-                        product.setCurrency("INR"); // Because you're scraping from amazon.in
+                        // Scrape and set Price
+                        String wholePart = productElement.select("span.a-price-whole").text().replace(",", "").trim();
+                        String fractionPart = productElement.select("span.a-price-fraction").text().trim();
+                        if (!wholePart.isEmpty()) {
+                            String fullPrice = wholePart + "." + (fractionPart.isEmpty() ? "00" : fractionPart);
+                            product.setPrice(Double.parseDouble(fullPrice));
+                            product.setCurrency("INR"); // Because you're scraping from amazon.in
+                        }
+
+                        // Set Image URL
+                        product.setImageUrl(productElement.select("img.s-image").attr("src"));
+
+                        // Set Platform and Scraped Time
+                        product.setPlatform("Amazon");
+                        product.setScrapedAt(new Date());
+
+                        // Add to list
+                        products.add(scraperService.upsertProduct(product));
                     }
-
-                    // Set Image URL
-                    product.setImageUrl(productElement.select("img.s-image").attr("src"));
-
-                    // Set Platform and Scraped Time
-                    product.setPlatform("Amazon");
-                    product.setScrapedAt(new Date());
-
-                    // Add to list
-                    products.add(scraperService.upsertProduct(product));
                 } catch (Exception e) {
                     log.error("Error processing a product element: " + e.getMessage());
                 }

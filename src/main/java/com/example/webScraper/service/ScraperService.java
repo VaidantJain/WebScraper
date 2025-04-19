@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,13 +25,53 @@ public class ScraperService {
     private static final Logger log = LoggerFactory.getLogger(ScraperService.class);
 
     public List<Product> scrapeByKeyword(String keyword) throws Exception {
-        List<Product> products = new ArrayList<>();
-        products.addAll(AmazonHelper.scrapeFromAmazon(keyword, this));
-        products.addAll(FlipkartHelper.scrapeFromFlipkart(keyword,this));
-        products.addAll(ShopCluesHelper.scrapeFromShopClues(keyword,this));
-        //products.addAll(CromaHelper.scrapeFromCroma(keyword,this));
-        return productRepository.saveAll(products);
+        CompletableFuture<List<Product>> amazonFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return AmazonHelper.scrapeFromAmazon(keyword, this);
+            } catch (Exception e) {
+                log.error("Amazon scraping failed: {}", e.getMessage());
+                return new ArrayList<>();
+            }
+        });
+
+        CompletableFuture<List<Product>> flipkartFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return FlipkartHelper.scrapeFromFlipkart(keyword, this);
+            } catch (Exception e) {
+                log.error("Flipkart scraping failed: {}", e.getMessage());
+                return new ArrayList<>();
+            }
+        });
+
+        CompletableFuture<List<Product>> shopCluesFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return ShopCluesHelper.scrapeFromShopClues(keyword, this);
+            } catch (Exception e) {
+                log.error("ShopClues scraping failed: {}", e.getMessage());
+                return new ArrayList<>();
+            }
+        });
+
+        // Wait for all to complete
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(amazonFuture, flipkartFuture, shopCluesFuture);
+
+        // Combine results
+        CompletableFuture<List<Product>> allProductsFuture = allFutures.thenApply(v -> {
+            List<Product> allProducts = new ArrayList<>();
+            try {
+                allProducts.addAll(amazonFuture.get());
+                allProducts.addAll(flipkartFuture.get());
+                allProducts.addAll(shopCluesFuture.get());
+            } catch (InterruptedException | ExecutionException e) {
+                log.error("Error combining scraped results: {}", e.getMessage());
+            }
+            return allProducts;
+        });
+
+        // Save all products to DB
+        return productRepository.saveAll(allProductsFuture.get());
     }
+
 
     @ExceptionHandler(IOException.class)
     public void handleIOException(IOException e) {
