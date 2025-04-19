@@ -2,14 +2,14 @@ package com.example.webScraper.controller;
 
 import com.example.webScraper.model.User;
 import com.example.webScraper.service.UserService;
+import com.example.webScraper.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.Date;
@@ -17,6 +17,8 @@ import java.util.Optional;
 
 @Controller
 public class AuthController {
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     private UserService userService;
@@ -25,22 +27,25 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @GetMapping("/login")
-    public String login(@RequestParam(value = "error", required = false) String error, Model model) {
+    public String login(@RequestParam(value = "error", required = false) String error,@RequestParam(value = "logout", required = false) String logout, Model model) {
         if (error != null) {
             model.addAttribute("errorMessage", "Invalid username or password.");
+        }
+        if (logout != null) {
+            model.addAttribute("logoutMessage", "You have been logged out.");
         }
         return "login";
     }
 
     @PostMapping("/login")
-    public String loginUser(@ModelAttribute("user") User user, Model model) {
+    public ResponseEntity<?> loginUser(@RequestBody User user) {
         Optional<User> existingUser = userService.findByUsername(user.getUsername());
 
         if (existingUser.isPresent() && passwordEncoder.matches(user.getPassword(), existingUser.get().getPassword())) {
-            return "redirect:/dashboard"; // Redirect to the dashboard upon successful login
+            String token = jwtUtil.generateToken(user.getUsername());
+            return ResponseEntity.ok(Collections.singletonMap("token", token));
         } else {
-            model.addAttribute("errorMessage", "Invalid username or password.");
-            return "redirect:/login?error";
+            return ResponseEntity.status(401).body("Invalid username or password");
         }
     }
 
@@ -52,12 +57,11 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String registerUser(@ModelAttribute("user") User user) {
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRoles(Collections.singletonList("ROLE_USER"));
         user.setCreatedAt(new Date());
         userService.saveUser(user);
-        return "redirect:/login?registered";
+        return ResponseEntity.ok("User registered successfully");
     }
-
 }

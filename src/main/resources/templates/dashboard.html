@@ -43,10 +43,11 @@
     <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <span class="nav-link" th:text="${#authentication.name}">User</span>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/logout">Logout</a>
+                <form action="/logout" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-link nav-link" style="background: none; border: none; padding: 0;">
+                        Logout
+                    </button>
+                </form>
             </li>
         </ul>
     </div>
