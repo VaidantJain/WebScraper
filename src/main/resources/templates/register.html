@@ -24,6 +24,9 @@
                             <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback d-block">
                                 <span th:errors="*{username}"></span>
                             </div>
+                            <div th:if="${usernameError}" class="text-danger">
+                                <span th:text="${usernameError}"></span>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -31,6 +34,9 @@
                             <input type="email" class="form-control" id="email" th:field="*{email}" required>
                             <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback d-block">
                                 <span th:errors="*{email}"></span>
+                            </div>
+                            <div th:if="${emailError}" class="text-danger">
+                                <span th:text="${emailError}"></span>
                             </div>
                         </div>
 

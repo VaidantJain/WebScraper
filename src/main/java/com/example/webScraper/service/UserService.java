@@ -29,6 +29,7 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        System.out.println("User found: " + user.getUsername());
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
@@ -38,5 +39,12 @@ public class UserService implements UserDetailsService {
     }
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
     }
 }
